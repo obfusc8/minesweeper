@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="googlebot" content="noindex, nofollow">
+<style type="text/css">
+#game_board {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor: pointer;
+}
+
+.game_cell {
+  width: 32px;
+  height: 32px;
+  text-align: center;
+}
+
+.button {
+    background-color: gray;
+    border: none;
+    color: white;
+    padding: 3px 5px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    margin: 0px 0px;
+    -webkit-transition-duration: 0.2s; /* Safari */
+    transition-duration: 0.2s;
+    cursor: pointer;
+}
+
+.button1 {
+    background-color: white;
+    color: black;
+    border: 2px solid gray;
+}
+
+.button1:hover {
+    background-color: gray;
+    color: white;
+}
+
+h1, h2, #timerbar, #flagcounter {
+  color: gray;
+  font-family: Lucida Console, Monaco, monospace;
+  font-weight: bold;
+  margin: 10px;
+}
+</style>
+<title>&#9967; MINESWEEPER &#9967;</title>
+</head>
+
+<body bgcolor="#f6f6f6">
+
+<h1 id="header" align="center">&#9967;&#9967;&#9967; MINESWEEPER &#9967;&#9967;&#9967;</h1>
+<div align="center">
+  <table id="toolbar" border="0px" style="padding:5px" width="360px">
+    <tr>
+      <td id="timerbar" width="10px">00:00</td>
+      <td id="flagcounter" align="right"></td>
+      <td align="right" width="205px">
+        <button class="button button1" onclick="restartGame()">&nbsp;&#8634;&nbsp;</button>
+        <button class="button button1" onclick="setupGame(0)">EASY</button>
+        <button class="button button1" onclick="setupGame(1)">HARD</button>
+        <button class="button button1" onclick="setupGame(2)">NUTS</button>
+      </td>
+   </tr>
+  </table>
+</div>
+<div id="main" align="center"></div>
+<h1 id="footer" align="center"></h1>
+
+<script type="text/javascript">
+
+var debug = false;
+var gameOver = false;
+var gameStart = false;
+
+var numRows = 10;
+var numCols = 10;
+var numMines = 10;
+var numFlags = numMines;
+var mine = String.fromCharCode(9967);
+var flagged = String.fromCharCode(9873);
+var hidden = "skyblue";
+var shown = "white"
+var flagColor = "crimson";
+var mineColor = "black";
+var fail = "crimson";
+var cellSize = 32;
+var board;
+
+var flagCounter = document.getElementById("flagcounter");
+var timerbar = document.getElementById("timerbar");
+
+// difficulty settings
+// rows|columns|mines|toolbar width
+var skill = [];
+skill[0] = [10, 10, 10, 360];
+skill[1] = [10, 15, 20, 540];
+skill[2] = [10, 20, 40, 720];
+
+// game timer
+var counter = 0;
+var timer;
+
+// initialize game
+createGame();
+createBoard();
+
+// set difficulty level
+// defaults to easy
+function setupGame(level) {
+	numRows = skill[level][0];
+  numCols = skill[level][1];
+  numMines = skill[level][2];
+  document.getElementById("toolbar").style.width = skill[level][3]+"px";
+  restartGame();
+}
+
+// wipe previous iteration and create a new game
+function restartGame() {
+	var oldTable = document.getElementById("game_board");
+  oldTable.parentNode.removeChild(oldTable);
+  document.getElementById("footer").innerHTML = "";
+  document.getElementById("timerbar").innerHTML = "00:00";
+	createGame();
+  createBoard();
+  gameOver = false;
+  gameStart = false;
+  counter = 0;
+  clearInterval(timer);
+}
+  
+// create the gameboard data
+function createGame() {
+
+	numFlags = numMines;
+
+	// zero the board
+	board = [];
+  for (i = 0; i < numRows; i++) {
+  	board[i] = [];
+  	for (j = 0; j < numCols; j++) {
+     board[i][j] = 0;
+    }
+  }
+  
+  // generate the mines and hints in adjacent cells
+  for (i = 0; i < numMines; i++) {
+  	var x = Math.floor(Math.random() * numRows);
+    var y = Math.floor(Math.random() * numCols);
+    if (board[x][y] != mine) {
+    	// Drop a mine!
+    	board[x][y] = mine;
+      for (g = x-1; g < x+2; g++) {
+      	for (h = y-1; h < y+2; h++) {
+        	// fill in the adjacent hints
+        	if (inBounds(g,h) && board[g][h] != mine) { board[g][h]++; }
+        }
+      }
+    } else {
+    	// don't duplicate mines
+    	i--;
+    }
+  }
+}
+
+// create the graphical gameboard
+function createBoard() {
+	flagCounter.innerHTML = numFlags+""+flagged;
+  
+  var div = document.getElementById("main");
+  var table = document.createElement("TABLE");
+  table.setAttribute("id", "game_board");
+  table.style.border = "2px solid black";
+	var row, cell;
+  for (var i = 0; i < numRows; i++) {
+      row = table.insertRow(-1);
+      for (var j = 0; j < numCols; j++) {
+          cell = row.insertCell(j);
+          cell.style.background = hidden;
+          var label = i+","+j;
+          cell.setAttribute("onclick", "cellClicked("+label+")");
+          cell.setAttribute("oncontextmenu", "rightClicked("+label+");return false;");
+          cell.setAttribute("id", label);
+          cell.setAttribute("class", "game_cell");
+          if (debug) {
+            if (board[i][j] != 0) {
+              cell.innerHTML = board[i][j];
+            }
+          }
+      }
+  }
+  div.appendChild(table);
+}
+
+// action to perform when a cell is clicked
+function cellClicked(i,j) {
+  var cell = document.getElementById(i+","+j);
+  var aCell;
+  
+	// first click detected, start timer!
+	if (!gameStart) {
+  	gameStart = true;
+    timer = setInterval(function () {
+    	counter++;
+  		var min = Math.floor(counter / 60)+"";
+  		min = (min.length < 2) ? "0"+min : min;
+  		var sec = (counter % 60)+"";
+ 	 		sec = (sec.length < 2) ? "0"+sec : sec;
+			timerbar.innerHTML = min +":"+ sec;
+		}, 1000);
+  }
+
+  // do nothing if game over
+  if (gameOver) { return; }  
+  
+  // do nothing if already flagged
+  if (isFlagged(i,j)) { return; }
+  
+  // mine clicked!
+  if (board[i][j] == mine) {
+  	// *** LOOOOOOSER ***
+  	cell.style.background = fail;
+    document.getElementById("footer").innerHTML = "YOU DEAD!";
+    document.getElementById("game_board").style.border = "2px solid crimson";
+    clearInterval(timer);
+    gameOver = true;
+  	for (x = 0; x < numRows; x++) {
+    	for (y = 0; y < numCols; y++) {
+      	aCell = document.getElementById(x+","+y);
+      	if (board[x][y] == mine) {
+        	showMine(x,y);
+        } else if (board[x][y] != 0 && isFlagged(x,y)) {
+        	aCell.style.background = shown;
+        } else if (board[x][y] != 0) {
+        	showHint(x,y);
+        } else {
+        	aCell.style.background = shown;
+        }     
+      }
+    }	
+  }
+  
+  // number clicked
+  if (board[i][j] > 0) {
+    showHint(i,j);
+  }
+  
+  // empty cell clicked, recurse!
+  if (board[i][j] == 0) {
+  	// show all adjacent empties
+		clearEmpty(i,j);
+    // show all adjacent hints
+    revealHints();
+  }  
+  
+  // check if all mines have been found
+  var numHidden = 0;
+  for (x = 0; x < numRows; x++) {
+  	for (y = 0; y < numCols; y++) {
+    	if (isHidden(x,y)) {
+      	numHidden++;
+      }
+    }
+  }
+  if (numHidden == numMines) {
+  	// *** WINNER ***
+  	document.getElementById("footer").innerHTML = "YOU LIVE!";
+    document.getElementById("game_board").style.border = "2px solid green";
+    clearInterval(timer);
+    for (x = 0; x < numRows; x++) {
+    	for (y = 0; y < numCols; y++) {
+      	showMine(x,y);
+      }
+    }
+    gameOver = true;
+  }
+}
+
+// flag potential mines with rightclick
+function rightClicked(i,j) {
+	// do nothing if game over
+  if (gameOver) { return; }  
+
+	// toggle flagged cells
+  var cell = document.getElementById(i+","+j);
+  if (cell.innerHTML == "" && cell.style.background == hidden && numFlags != 0) {
+  	cell.innerHTML = flagged;
+    cell.style.fontSize = "24px";
+    cell.style.color = flagColor;
+    numFlags--;
+  } else if (cell.innerHTML == flagged) {
+  	cell.innerHTML = "";
+    cell.style.color = mineColor;
+    numFlags++;
+  }
+  flagCounter.innerHTML = numFlags+""+flagged;
+}
+
+// recursive function to clear empties
+function clearEmpty(i,j) {
+	if (inBounds(i,j)) {
+    if (isHidden(i,j) && board[i][j] == 0 && !isFlagged(i,j)) {
+      document.getElementById(i+","+j).style.background = shown;
+      clearEmpty(i+1,j);
+      clearEmpty(i,j+1);
+      clearEmpty(i-1,j);
+      clearEmpty(i,j-1);
+    } 
+  } 
+}
+ 
+// reveal all adjacent hints after clearing empties
+function revealHints() {
+  // reveal adjacent hints
+  for (i = 0; i < numRows; i++) {
+    for (j = 0; j < numCols; j++) {
+      if (!isHidden(i,j) && board[i][j] == 0) {
+        for (x = i-1; x < i+2; x++) {
+          for (y = j-1; y < j+2; y++) {
+            if (inBounds(x,y) && !isFlagged(x,y)) {
+              showHint(x,y);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// reveal a mine at this coordinate
+function showMine(i,j) {
+	if (board[i][j] == mine) {
+    var cell = document.getElementById(i+","+j);
+    cell.innerHTML = mine;
+    cell.style.fontSize = "24px";
+    cell.style.fontWeight = "bold";
+  }
+}
+
+// reveal a color coded hint at this coordinate
+function showHint(i,j) {
+	if (board[i][j] != mine && board[i][j] > 0) {
+  	var cell = document.getElementById(i+","+j);
+  	cell.style.background = shown;
+  	cell.innerHTML = board[i][j];
+    cell.style.fontFamily = "Lucida Console, Monaco, monospace";
+    cell.style.fontSize = "18px";
+    switch (board[i][j]) {
+    	case 1: cell.style.color = "cornflowerblue"; break;
+      case 2: cell.style.color = "darkorchid";   	 break;
+      case 3: cell.style.color = "coral";          break;
+      case 4: cell.style.color = "green";          break;
+      case 5: cell.style.color = "olive";          break;
+      case 6: cell.style.color = "hotpink";        break;
+      case 7: cell.style.color = "fuchsia";        break;
+      case 8: cell.style.color = "red";
+    }
+  }
+}
+
+// are the current coordinates on the gameboard?
+// avoiding array index error
+function inBounds(i,j) {
+	return ((i >= 0 && i < numRows) && (j >= 0 && j < numCols)) ? true : false;
+}
+
+// is this coordinate a hidden cell?
+function isHidden(i,j) {
+	return (document.getElementById(i+","+j).style.background == hidden) ? true : false;
+}
+
+// is this coordinate currently flagged?
+function isFlagged(i,j) {
+	return (document.getElementById(i+","+j).innerHTML == flagged) ? true : false;
+}
+
+</script>
+</body>
+</html>
