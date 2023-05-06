@@ -14,7 +14,7 @@ In essence, this code offers a complete digital rendition of minesweeper, enabli
 ## Instructions
 To save the code as a file and view it in your browser, follow these steps:
 - Open a text editor on your computer, such as Notepad on Windows or TextEdit on macOS.
-- Copy the entire code snippet provided.
+- Copy the entire code snippet of 'minesweeper.htm'
 - Paste the code into your text editor.
 - Save the file with a descriptive name, such as "minesweeper.html". Make sure to include the ".html" extension to indicate that it is an HTML file.
 - Locate the saved file in your computer's file explorer or finder.
