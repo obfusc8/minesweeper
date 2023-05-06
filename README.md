@@ -12,9 +12,9 @@ This code represents a digital reenactment of a World War I minesweeping mission
 In essence, this code offers a complete digital rendition of minesweeper, enabling users to experience the thrill and challenge of minesweeping through their web browser.
 
 ## Instructions
-To save the code as a file and view it in your browser, follow these steps:
+To play this game, you will need to save the code as a file and view it in your browser, follow these steps:
 - Open a text editor on your computer, such as Notepad on Windows or TextEdit on macOS.
-- Copy the entire code snippet of 'minesweeper.htm'
+- Copy the entire contents of 'minesweeper.htm'
 - Paste the code into your text editor.
 - Save the file with a descriptive name, such as "minesweeper.html". Make sure to include the ".html" extension to indicate that it is an HTML file.
 - Locate the saved file in your computer's file explorer or finder.
